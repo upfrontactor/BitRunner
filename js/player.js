@@ -82,6 +82,7 @@ class Player {
         this.state = 'running'; // running, jumping, ducking, kicking, dying
         this.stateTimer = 0;
         this.inAir = false;
+        this.jumpBuffered = false;
         this.jumpVelocity = 0;
         this.jumpHeight = -14;
         this.gravity = 0.65;
@@ -98,9 +99,14 @@ class Player {
 
     jump() {
         if (this.state === 'dying') return false;
-        if (this.inAir) return false;
+        if (this.inAir) {
+            // Buffer the jump so it fires the instant we land
+            this.jumpBuffered = true;
+            return false;
+        }
         this.state = 'jumping';
         this.inAir = true;
+        this.jumpBuffered = false;
         this.jumpVelocity = this.jumpHeight;
         this.stateTimer = 0;
         return true;
@@ -182,6 +188,11 @@ class Player {
                 this.jumpVelocity = 0;
                 if (this.state === 'jumping') {
                     this.state = 'running';
+                }
+                // Instantly execute buffered jump
+                if (this.jumpBuffered) {
+                    this.jumpBuffered = false;
+                    this.jump();
                 }
             }
         }
