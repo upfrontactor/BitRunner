@@ -9,6 +9,18 @@ const UI = {
         // Hide all screens
         document.querySelectorAll('.screen').forEach(s => s.classList.remove('active'));
 
+        // Toggle title background
+        const titleBg = document.getElementById('title-bg');
+        if (titleBg) {
+            if (screenId === 'main-menu') {
+                titleBg.classList.add('visible');
+                if (typeof TitleBG !== 'undefined') TitleBG.start();
+            } else {
+                titleBg.classList.remove('visible');
+                if (typeof TitleBG !== 'undefined') TitleBG.stop();
+            }
+        }
+
         // Track mode if provided
         if (mode) this.pendingMode = mode;
 

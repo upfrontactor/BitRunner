@@ -106,68 +106,72 @@ const Shop = {
         ctx.ellipse(cx, 90, 16, 4, 0, 0, Math.PI * 2);
         ctx.fill();
 
-        // Legs
+        // Legs (side view — one behind other)
         ctx.fillStyle = char.bodyDark;
-        this.roundRect(ctx, cx - 10, cy + 50, 8, 16, 3);
-        this.roundRect(ctx, cx + 2, cy + 50, 8, 13, 3);
+        this.roundRect(ctx, cx - 4, cy + 50, 9, 16, 3);
+        ctx.fillStyle = char.bodyColor;
+        this.roundRect(ctx, cx - 1, cy + 48, 9, 14, 3);
         // Shoes
         ctx.fillStyle = char.accentColor;
-        this.roundRect(ctx, cx - 12, cy + 63, 12, 5, 2);
-        this.roundRect(ctx, cx + 0, cy + 60, 12, 5, 2);
+        this.roundRect(ctx, cx - 6, cy + 63, 12, 5, 2);
+        this.roundRect(ctx, cx - 2, cy + 59, 12, 5, 2);
 
-        // Body
+        // Torso (narrow side view)
         ctx.fillStyle = char.bodyColor;
-        this.roundRect(ctx, cx - 14, cy + 16, 28, 36, 4);
+        this.roundRect(ctx, cx - 8, cy + 16, 18, 36, 4);
         ctx.fillStyle = char.bodyLight;
-        this.roundRect(ctx, cx - 13, cy + 17, 8, 34, 3);
+        this.roundRect(ctx, cx + 3, cy + 17, 6, 34, 3);
         // Belt
         ctx.fillStyle = char.accentColor;
-        this.roundRect(ctx, cx - 15, cy + 42, 30, 5, 2);
+        this.roundRect(ctx, cx - 9, cy + 42, 20, 5, 2);
 
-        // Arms
-        ctx.fillStyle = char.bodyDark;
-        this.roundRect(ctx, cx - 21, cy + 18, 7, 18, 3);
+        // Arm (single, side view)
         ctx.fillStyle = char.bodyColor;
-        this.roundRect(ctx, cx + 14, cy + 18, 7, 20, 3);
-        // Hands
+        this.roundRect(ctx, cx - 2, cy + 20, 7, 18, 3);
         ctx.fillStyle = char.skinColor;
-        this.roundRect(ctx, cx - 20, cy + 34, 6, 6, 2);
-        this.roundRect(ctx, cx + 15, cy + 36, 6, 6, 2);
+        this.roundRect(ctx, cx - 1, cy + 35, 6, 6, 2);
 
         // Neck
         ctx.fillStyle = char.skinDark;
-        this.roundRect(ctx, cx - 4, cy + 10, 8, 8, 2);
+        this.roundRect(ctx, cx, cy + 10, 8, 8, 2);
 
-        // Head
+        // Head (side profile facing right)
+        const hx = cx + 4;
         ctx.fillStyle = char.skinColor;
         ctx.beginPath();
-        ctx.arc(cx, cy, 12, 0, Math.PI * 2);
+        ctx.arc(hx, cy, 12, 0, Math.PI * 2);
         ctx.fill();
 
-        // Hair
+        // Hair (top and back)
         ctx.fillStyle = char.hairColor;
         ctx.beginPath();
-        ctx.arc(cx, cy - 2, 12, Math.PI, Math.PI * 2);
+        ctx.arc(hx, cy - 2, 12, Math.PI * 0.8, Math.PI * 2.1);
+        ctx.fill();
+        ctx.beginPath();
+        ctx.arc(hx - 2, cy - 1, 12, Math.PI * 0.6, Math.PI * 1.4);
         ctx.fill();
 
-        // Eyes
+        // Nose
+        ctx.fillStyle = char.skinDark;
+        ctx.beginPath();
+        ctx.moveTo(hx + 10, cy - 1);
+        ctx.lineTo(hx + 14, cy + 2);
+        ctx.lineTo(hx + 10, cy + 3);
+        ctx.closePath();
+        ctx.fill();
+
+        // Single eye (facing right)
         ctx.fillStyle = char.eyeColor;
         ctx.beginPath();
-        ctx.ellipse(cx - 4, cy - 1, 3, 2.5, 0, 0, Math.PI * 2);
-        ctx.fill();
-        ctx.beginPath();
-        ctx.ellipse(cx + 4, cy - 1, 3.5, 3, 0, 0, Math.PI * 2);
+        ctx.ellipse(hx + 6, cy - 1, 3.5, 3, 0, 0, Math.PI * 2);
         ctx.fill();
         ctx.fillStyle = char.pupilColor;
         ctx.beginPath();
-        ctx.arc(cx - 3, cy - 1, 1.3, 0, Math.PI * 2);
-        ctx.fill();
-        ctx.beginPath();
-        ctx.arc(cx + 5, cy - 1, 1.5, 0, Math.PI * 2);
+        ctx.arc(hx + 7.5, cy - 1, 1.5, 0, Math.PI * 2);
         ctx.fill();
 
         // Mouth
         ctx.fillStyle = char.skinDark;
-        ctx.fillRect(cx + 1, cy + 4, 4, 1.5);
+        ctx.fillRect(hx + 5, cy + 4, 3, 1.5);
     }
 };

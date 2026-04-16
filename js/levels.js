@@ -15,7 +15,7 @@ const MAPS = {
             bushes: true,
             clouds: true
         },
-        storyLength: 3000 // distance units to complete
+        storyLength: 2000 // distance units to complete
     },
     city: {
         id: 'city',
@@ -31,7 +31,7 @@ const MAPS = {
             streetLights: true,
             clouds: false
         },
-        storyLength: 3500
+        storyLength: 2000
     },
     volcano: {
         id: 'volcano',
@@ -47,7 +47,7 @@ const MAPS = {
             embers: true,
             clouds: false
         },
-        storyLength: 4000
+        storyLength: 2000
     },
     space: {
         id: 'space',
@@ -63,7 +63,7 @@ const MAPS = {
             nebula: true,
             planets: true
         },
-        storyLength: 4500
+        storyLength: 2000
     }
 };
 
@@ -90,10 +90,10 @@ const DIFFICULTIES = {
         name: 'Hard',
         baseSpeed: 6,
         maxSpeed: 12,
-        spawnGap: 200,
+        spawnGap: 260,
         speedIncrease: 0.0008,
         xpReward: 200,
-        reactionZone: 45
+        reactionZone: 55
     }
 };
 
@@ -182,11 +182,23 @@ class Background {
         }
         if (mapEl.buildings) {
             for (let i = 0; i < 6; i++) {
+                const bw = 60 + Math.random() * 40;
+                const bh = 100 + Math.random() * 120;
+                // Pre-generate window pattern
+                const windows = [];
+                for (let wy = 0; wy < bh - 20; wy += 20) {
+                    for (let wx = 8; wx < bw - 8; wx += 15) {
+                        if (Math.random() > 0.3) {
+                            windows.push({ wx, wy, alpha: 0.4 + Math.random() * 0.4 });
+                        }
+                    }
+                }
                 elements.push({
                     type: 'building',
                     x: i * 250 + Math.random() * 80,
-                    h: 100 + Math.random() * 120,
-                    w: 60 + Math.random() * 40
+                    h: bh,
+                    w: bw,
+                    windows
                 });
             }
         }
@@ -335,13 +347,11 @@ class Background {
                 ctx.fillRect(x, this.groundY + 60 - el.h, el.w, el.h);
                 // Windows
                 ctx.fillStyle = '#ffee88';
-                for (let wy = 0; wy < el.h - 20; wy += 20) {
-                    for (let wx = 8; wx < el.w - 8; wx += 15) {
-                        if (Math.random() > 0.3) {
-                            ctx.globalAlpha = 0.4 + Math.random() * 0.4;
-                            ctx.fillRect(x + wx, this.groundY + 60 - el.h + 10 + wy, 8, 10);
-                        }
-                    }
+                if (el.windows) {
+                    el.windows.forEach(win => {
+                        ctx.globalAlpha = win.alpha;
+                        ctx.fillRect(x + win.wx, this.groundY + 60 - el.h + 10 + win.wy, 8, 10);
+                    });
                 }
                 ctx.globalAlpha = 1;
                 break;

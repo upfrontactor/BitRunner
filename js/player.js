@@ -81,6 +81,7 @@ class Player {
         this.height = 60;
         this.state = 'running'; // running, jumping, ducking, kicking, dying
         this.stateTimer = 0;
+        this.inAir = false;
         this.jumpVelocity = 0;
         this.jumpHeight = -14;
         this.gravity = 0.65;
@@ -97,8 +98,9 @@ class Player {
 
     jump() {
         if (this.state === 'dying') return false;
-        if (this.state === 'jumping') return false;
+        if (this.inAir) return false;
         this.state = 'jumping';
+        this.inAir = true;
         this.jumpVelocity = this.jumpHeight;
         this.stateTimer = 0;
         return true;
@@ -170,21 +172,27 @@ class Player {
             this.animFrame = (this.animFrame + 1) % 4;
         }
 
-        // State logic
-        if (this.state === 'jumping') {
+        // Gravity always applies when in air
+        if (this.inAir) {
             this.y += this.jumpVelocity;
             this.jumpVelocity += this.gravity;
             if (this.y >= this.groundY) {
                 this.y = this.groundY;
-                this.state = 'running';
+                this.inAir = false;
                 this.jumpVelocity = 0;
+                if (this.state === 'jumping') {
+                    this.state = 'running';
+                }
             }
-        } else if (this.state === 'ducking') {
+        }
+
+        // State logic
+        if (this.state === 'ducking') {
             // Stay ducking until key is released (handled by standUp())
         } else if (this.state === 'kicking') {
             this.stateTimer--;
             if (this.stateTimer <= 0) {
-                this.state = 'running';
+                this.state = this.inAir ? 'jumping' : 'running';
             }
         } else if (this.state === 'dying') {
             this.stateTimer--;
@@ -240,123 +248,130 @@ class Player {
         ctx.ellipse(cx, this.groundY + this.height + 2, 20, 5, 0, 0, Math.PI * 2);
         ctx.fill();
 
-        // === LEGS ===
-        const legW = 8, legBaseH = 14;
-        ctx.fillStyle = c.bodyDark;
+        // === SIDE-VIEW BODY (facing right) ===
+        const torsoTop = drawY + (this.state === 'ducking' ? 4 : 14);
+        const torsoH = this.state === 'ducking' ? drawH - 6 : drawH - 14;
+        const torsoW = 18; // narrower for side view
+        const torsoX = cx - torsoW / 2 + 2; // shifted right slightly
+
+        // === LEGS (side view — one in front of other) ===
+        const legW = 9, legBaseH = 14;
         if (this.state === 'running') {
             const t = this.animFrame * Math.PI / 2;
-            const l1 = Math.sin(t) * 8;
-            const l2 = Math.sin(t + Math.PI) * 8;
-            // Back leg
-            this.drawRoundRect(ctx, cx - 11, drawY + drawH - 2, legW, legBaseH + l2, 3);
-            // Shoe
-            ctx.fillStyle = c.accentColor;
-            this.drawRoundRect(ctx, cx - 13, drawY + drawH + legBaseH + l2 - 4, legW + 4, 5, 2);
-            // Front leg
-            ctx.fillStyle = c.bodyDark;
-            this.drawRoundRect(ctx, cx + 3, drawY + drawH - 2, legW, legBaseH + l1, 3);
-            ctx.fillStyle = c.accentColor;
-            this.drawRoundRect(ctx, cx + 1, drawY + drawH + legBaseH + l1 - 4, legW + 4, 5, 2);
-        } else if (this.state === 'jumping') {
-            ctx.fillStyle = c.bodyDark;
-            this.drawRoundRect(ctx, cx - 12, drawY + drawH - 4, legW, 10, 3);
-            this.drawRoundRect(ctx, cx + 4, drawY + drawH - 4, legW, 10, 3);
-            ctx.fillStyle = c.accentColor;
-            this.drawRoundRect(ctx, cx - 14, drawY + drawH + 4, legW + 4, 4, 2);
-            this.drawRoundRect(ctx, cx + 2, drawY + drawH + 4, legW + 4, 4, 2);
-        } else if (this.state === 'ducking') {
-            ctx.fillStyle = c.bodyDark;
-            this.drawRoundRect(ctx, cx - 12, drawY + drawH - 1, 10, 6, 2);
-            this.drawRoundRect(ctx, cx + 2, drawY + drawH - 1, 10, 6, 2);
-            ctx.fillStyle = c.accentColor;
-            this.drawRoundRect(ctx, cx - 14, drawY + drawH + 3, 12, 4, 2);
-            this.drawRoundRect(ctx, cx + 0, drawY + drawH + 3, 12, 4, 2);
-        } else if (this.state === 'kicking') {
-            ctx.fillStyle = c.bodyDark;
-            this.drawRoundRect(ctx, cx - 11, drawY + drawH - 2, legW, legBaseH, 3);
-            ctx.fillStyle = c.accentColor;
-            this.drawRoundRect(ctx, cx - 13, drawY + drawH + legBaseH - 4, legW + 4, 5, 2);
-            // Kick leg extended forward
-            const kickProg = this.stateTimer > 10 ? (20 - this.stateTimer) / 10 : this.stateTimer / 10;
-            const kickLen = kickProg * 28;
+            const l1 = Math.sin(t) * 10;       // front leg
+            const l2 = Math.sin(t + Math.PI) * 10; // back leg
+            // Back leg (darker, behind)
             ctx.fillStyle = c.bodyDark;
             ctx.save();
-            ctx.translate(cx + 6, drawY + drawH + 4);
-            ctx.rotate(-0.3);
+            ctx.translate(cx, drawY + drawH);
+            ctx.rotate(l2 * Math.PI / 180 * 2);
+            this.drawRoundRect(ctx, -legW / 2, -2, legW, legBaseH, 3);
+            ctx.fillStyle = c.accentColor;
+            this.drawRoundRect(ctx, -legW / 2 - 2, legBaseH - 4, legW + 4, 5, 2);
+            ctx.restore();
+            // Front leg (lighter, in front)
+            ctx.fillStyle = c.bodyColor;
+            ctx.save();
+            ctx.translate(cx + 2, drawY + drawH);
+            ctx.rotate(l1 * Math.PI / 180 * 2);
+            this.drawRoundRect(ctx, -legW / 2, -2, legW, legBaseH, 3);
+            ctx.fillStyle = c.accentColor;
+            this.drawRoundRect(ctx, -legW / 2 - 2, legBaseH - 4, legW + 4, 5, 2);
+            ctx.restore();
+        } else if (this.state === 'jumping') {
+            // Tucked legs
+            ctx.fillStyle = c.bodyDark;
+            ctx.save();
+            ctx.translate(cx - 2, drawY + drawH);
+            ctx.rotate(-0.4);
+            this.drawRoundRect(ctx, -4, -2, legW, 10, 3);
+            ctx.restore();
+            ctx.fillStyle = c.bodyColor;
+            ctx.save();
+            ctx.translate(cx + 2, drawY + drawH);
+            ctx.rotate(0.3);
+            this.drawRoundRect(ctx, -4, -2, legW, 10, 3);
+            ctx.restore();
+            ctx.fillStyle = c.accentColor;
+            this.drawRoundRect(ctx, cx - 6, drawY + drawH + 5, legW + 2, 4, 2);
+            this.drawRoundRect(ctx, cx + 1, drawY + drawH + 6, legW + 2, 4, 2);
+        } else if (this.state === 'ducking') {
+            // Legs folded under
+            ctx.fillStyle = c.bodyDark;
+            this.drawRoundRect(ctx, cx - 6, drawY + drawH - 1, 14, 6, 2);
+            ctx.fillStyle = c.accentColor;
+            this.drawRoundRect(ctx, cx - 4, drawY + drawH + 3, 16, 4, 2);
+        } else if (this.state === 'kicking') {
+            // Standing leg
+            ctx.fillStyle = c.bodyDark;
+            this.drawRoundRect(ctx, cx - 5, drawY + drawH - 2, legW, legBaseH, 3);
+            ctx.fillStyle = c.accentColor;
+            this.drawRoundRect(ctx, cx - 7, drawY + drawH + legBaseH - 4, legW + 4, 5, 2);
+            // Kick leg extended right
+            const kickProg = this.stateTimer > 10 ? (20 - this.stateTimer) / 10 : this.stateTimer / 10;
+            const kickLen = kickProg * 28;
+            ctx.fillStyle = c.bodyColor;
+            ctx.save();
+            ctx.translate(cx + 4, drawY + drawH + 2);
+            ctx.rotate(-0.25);
             this.drawRoundRect(ctx, 0, -4, kickLen + 8, legW, 3);
-            // Kick shoe
             ctx.fillStyle = c.accentColor;
             this.drawRoundRect(ctx, kickLen + 4, -5, 10, legW + 2, 3);
             ctx.restore();
-            // Kick effect lines
+            // Kick effect
             if (kickProg > 0.5) {
                 ctx.strokeStyle = c.accentColor;
                 ctx.lineWidth = 2;
-                ctx.globalAlpha = (ctx.globalAlpha || 1) * (kickProg - 0.5) * 2;
+                const saveAlpha = ctx.globalAlpha;
+                ctx.globalAlpha = saveAlpha * (kickProg - 0.5) * 2;
                 for (let i = 0; i < 3; i++) {
-                    const angle = -0.4 + i * 0.4;
+                    const angle = -0.3 + i * 0.3;
                     const ex = cx + 6 + Math.cos(angle) * (kickLen + 20);
-                    const ey = drawY + drawH + Math.sin(angle) * (kickLen + 10);
+                    const ey = drawY + drawH + Math.sin(angle) * (kickLen + 8);
                     ctx.beginPath();
                     ctx.moveTo(ex, ey);
                     ctx.lineTo(ex + Math.cos(angle) * 10, ey + Math.sin(angle) * 10);
                     ctx.stroke();
                 }
-                ctx.globalAlpha = this.state === 'dying' ? this.stateTimer / 60 : 1;
+                ctx.globalAlpha = saveAlpha;
             }
         }
 
-        // === BODY (torso) ===
-        const torsoTop = drawY + (this.state === 'ducking' ? 4 : 14);
-        const torsoH = this.state === 'ducking' ? drawH - 6 : drawH - 14;
-        const torsoW = 28;
-        const torsoX = cx - torsoW / 2;
-
-        // Main torso
+        // === TORSO (side view — narrow) ===
         ctx.fillStyle = c.bodyColor;
         this.drawRoundRect(ctx, torsoX, torsoTop, torsoW, torsoH, 4);
 
-        // Light side highlight
+        // Front highlight
         ctx.fillStyle = c.bodyLight;
-        this.drawRoundRect(ctx, torsoX + 1, torsoTop + 1, 8, torsoH - 2, 3);
+        this.drawRoundRect(ctx, torsoX + torsoW - 7, torsoTop + 1, 6, torsoH - 2, 3);
 
-        // Belt / accent stripe
+        // Belt
         ctx.fillStyle = c.accentColor;
         const beltY = torsoTop + torsoH - 10;
         this.drawRoundRect(ctx, torsoX - 1, beltY, torsoW + 2, 5, 2);
 
-        // === ARMS ===
+        // === ARM (side view — single arm visible, swinging) ===
         if (this.state !== 'ducking') {
             const armW = 7, armH = 18;
-            const armSwing = Math.sin(this.animFrame * Math.PI / 2) * 12;
-            // Back arm
-            ctx.fillStyle = c.bodyDark;
-            ctx.save();
-            ctx.translate(cx - torsoW / 2 - 2, torsoTop + 6);
-            ctx.rotate((-armSwing) * Math.PI / 180);
-            this.drawRoundRect(ctx, -armW + 2, 0, armW, armH - 2, 3);
-            ctx.fillStyle = c.skinDark;
-            this.drawRoundRect(ctx, -armW + 3, armH - 5, armW - 2, 6, 2);
-            ctx.restore();
-            // Front arm
+            const armSwing = Math.sin(this.animFrame * Math.PI / 2) * 15;
             ctx.fillStyle = c.bodyColor;
             ctx.save();
-            ctx.translate(cx + torsoW / 2 + 2, torsoTop + 6);
-            ctx.rotate((armSwing) * Math.PI / 180);
-            this.drawRoundRect(ctx, -2, 0, armW, armH - 2, 3);
+            ctx.translate(cx + 2, torsoTop + 6);
+            ctx.rotate(armSwing * Math.PI / 180);
+            this.drawRoundRect(ctx, -armW / 2, 0, armW, armH - 2, 3);
             ctx.fillStyle = c.skinColor;
-            this.drawRoundRect(ctx, -1, armH - 5, armW - 2, 6, 2);
+            this.drawRoundRect(ctx, -armW / 2 + 1, armH - 5, armW - 2, 6, 2);
             ctx.restore();
         }
 
-        // === HEAD ===
+        // === HEAD (side profile facing right) ===
         const headR = this.state === 'ducking' ? 9 : 11;
-        const headX = this.state === 'ducking' ? cx + 6 : cx;
+        const headX = this.state === 'ducking' ? cx + 8 : cx + 4;
         const headY = this.state === 'ducking' ? drawY + 6 : drawY + 8;
 
         // Neck
         ctx.fillStyle = c.skinDark;
-        this.drawRoundRect(ctx, headX - 4, headY + headR - 4, 8, 8, 2);
+        this.drawRoundRect(ctx, headX - 6, headY + headR - 4, 8, 8, 2);
 
         // Head circle
         ctx.fillStyle = c.skinColor;
@@ -364,49 +379,48 @@ class Player {
         ctx.arc(headX, headY, headR, 0, Math.PI * 2);
         ctx.fill();
 
-        // Hair (top of head)
+        // Hair (top and back of head)
         ctx.fillStyle = c.hairColor;
         ctx.beginPath();
-        ctx.arc(headX, headY - 2, headR, Math.PI, Math.PI * 2);
+        ctx.arc(headX, headY - 2, headR, Math.PI * 0.8, Math.PI * 2.1);
+        ctx.fill();
+        // Hair back
+        ctx.beginPath();
+        ctx.arc(headX - 2, headY - 1, headR, Math.PI * 0.6, Math.PI * 1.4);
         ctx.fill();
 
-        // Eyes
-        const eyeLookX = this.state === 'kicking' ? 3 : 1;
-        // Eye whites
+        // Nose (facing right)
+        ctx.fillStyle = c.skinDark;
+        ctx.beginPath();
+        ctx.moveTo(headX + headR - 1, headY - 1);
+        ctx.lineTo(headX + headR + 3, headY + 2);
+        ctx.lineTo(headX + headR - 1, headY + 3);
+        ctx.closePath();
+        ctx.fill();
+
+        // Single eye (side view — facing right)
         ctx.fillStyle = c.eyeColor;
         ctx.beginPath();
-        ctx.ellipse(headX + eyeLookX + 1, headY - 1, 3.5, 3, 0, 0, Math.PI * 2);
+        ctx.ellipse(headX + headR - 5, headY - 1, 3.5, 3, 0, 0, Math.PI * 2);
         ctx.fill();
-        if (this.state !== 'ducking') {
-            ctx.beginPath();
-            ctx.ellipse(headX - 5 + eyeLookX, headY - 1, 3, 2.5, 0, 0, Math.PI * 2);
-            ctx.fill();
-        }
-        // Pupils
+        // Pupil (looking right)
         ctx.fillStyle = c.pupilColor;
         ctx.beginPath();
-        ctx.arc(headX + eyeLookX + 2, headY - 1, 1.5, 0, Math.PI * 2);
+        ctx.arc(headX + headR - 3.5, headY - 1, 1.5, 0, Math.PI * 2);
         ctx.fill();
-        if (this.state !== 'ducking') {
-            ctx.beginPath();
-            ctx.arc(headX - 4 + eyeLookX, headY - 1, 1.2, 0, Math.PI * 2);
-            ctx.fill();
-        }
 
-        // Mouth (small)
+        // Mouth (side view)
         ctx.fillStyle = c.skinDark;
         if (this.state === 'dying') {
-            // O mouth
             ctx.beginPath();
-            ctx.arc(headX + 2, headY + 5, 3, 0, Math.PI * 2);
+            ctx.arc(headX + headR - 4, headY + 5, 2.5, 0, Math.PI * 2);
             ctx.fill();
         } else if (this.state === 'kicking') {
-            // Grin
             ctx.beginPath();
-            ctx.arc(headX + 2, headY + 3, 4, 0.1, Math.PI - 0.1);
+            ctx.arc(headX + headR - 4, headY + 4, 3, -0.3, Math.PI * 0.8);
             ctx.stroke();
         } else {
-            ctx.fillRect(headX + 1, headY + 4, 4, 1.5);
+            ctx.fillRect(headX + headR - 6, headY + 4, 3, 1.5);
         }
 
         // Character-specific details
